@@ -3,23 +3,61 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 40  # Увеличиваем таймаут
+    
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python
+    
+    - name: Set up Python 3.10
       uses: actions/setup-python@v5
       with:
         python-version: '3.10'
-    - name: Install dependencies
+    
+    - name: Install ALL dependencies
       run: |
+        # Системные зависимости
         sudo apt-get update
-        sudo apt-get install -y unzip openjdk-17-jdk
-        pip install buildozer
+        sudo apt-get install -y \
+          unzip openjdk-17-jdk git autoconf libtool pkg-config \
+          zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
+          cmake libffi-dev libssl-dev python3-dev cython
+        
+        # Python зависимости
+        pip install --upgrade pip wheel setuptools
+        pip install buildozer plyer kivy
+        
+        # Фикс для Python 3.12
+        pip install "setuptools<67.0"  # Важно для совместимости
+        
+    - name: Configure Buildozer
+      run: |
+        # Создаем минимальный spec если отсутствует
+        if [ ! -f "buildozer.spec" ]; then
+          buildozer init
+        fi
+        
+        # Принудительно задаем оптимальные настройки
+        sed -i 's/^requirements = .*/requirements = python3,kivy==2.1.0,plyer,setuptools,cython/' buildozer.spec
+        sed -i 's/^android.ndk = .*/android.ndk = 23b/' buildozer.spec
+        sed -i 's/^android.arch = .*/android.arch = armeabi-v7a/' buildozer.spec
+        sed -i 's/^android.api = .*/android.api = 34/' buildozer.spec
+        sed -i 's/^android.minapi = .*/android.minapi = 21/' buildozer.spec
+        
     - name: Build APK
       run: |
-        # Убираем init, так как spec уже есть
-        buildozer -v android debug  # Сразу запускаем сборку
+        # Устанавливаем переменные окружения
+        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+        export PATH=$JAVA_HOME/bin:$PATH
+        
+        # Чистим предыдущие сборки
+        buildozer android clean
+        
+        # Запускаем сборку с подробным выводом
+        buildozer -v android debug
+        
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: victory-app
         path: bin/*.apk
+        retention-days: 1  # Автоочистка через 1 день
