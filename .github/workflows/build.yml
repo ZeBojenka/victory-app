@@ -40,6 +40,10 @@ jobs:
         
         # Проверяем установку
         sdkmanager --list --sdk_root=$ANDROID_SDK_ROOT
+        
+        # Создаем символическую ссылку для совместимости
+        mkdir -p $ANDROID_SDK_ROOT/tools/bin
+        ln -s $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager $ANDROID_SDK_ROOT/tools/bin/sdkmanager
     
     - name: Set up Python environment
       run: |
@@ -98,9 +102,8 @@ jobs:
         mkdir -p .buildozer/android/platform/python-for-android
         mkdir -p bin
         
-        # Удаляем комментарии из buildozer.spec
-        sed -i 's/#.*$//' buildozer.spec
-        sed -i '/^$/d' buildozer.spec
+        # Исправляем путь к sdkmanager в Buildozer
+        sed -i "s|android.sdkmanager = .*|android.sdkmanager = $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager|" buildozer.spec
         
         buildozer android clean
         buildozer -v android debug
