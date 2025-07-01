@@ -24,7 +24,7 @@ jobs:
           python3-pip build-essential \
           git zip unzip openjdk-17-jdk \
           libffi-dev libssl-dev \
-          libzbar-dev libncurses5 libsqlite3-dev
+          libzbar-dev libsqlite3-dev
         pip install --upgrade pip
         pip install cython buildozer
 
