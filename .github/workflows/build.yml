@@ -3,11 +3,13 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 50  # Увеличено время выполнения
+    timeout-minutes: 60  # Увеличено время выполнения
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
     
     - name: Install system dependencies
       run: |
@@ -16,12 +18,12 @@ jobs:
           unzip openjdk-17-jdk git autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
           cmake libffi-dev libssl-dev python3-dev python3-venv \
-          ffmpeg
+          ffmpeg wget
         
-        # Создаем правильную структуру Android SDK
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
+        # Создаем структуру Android SDK
+        wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
         mkdir -p android-sdk
-        unzip cmdline-tools.zip -d android-sdk/cmdline-tools
+        unzip -q cmdline-tools.zip -d android-sdk/cmdline-tools
         mv android-sdk/cmdline-tools/cmdline-tools android-sdk/cmdline-tools/latest
         rm cmdline-tools.zip
         
@@ -38,18 +40,16 @@ jobs:
         # Устанавливаем необходимые компоненты
         sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" --sdk_root=$ANDROID_SDK_ROOT
         
-        # Скачиваем и устанавливаем NDK 25b вручную
-        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
-        unzip android-ndk-r25b-linux.zip -d $ANDROID_SDK_ROOT/ndk
-        mv $ANDROID_SDK_ROOT/ndk/android-ndk-r25b $ANDROID_SDK_ROOT/ndk/25b
+        # Скачиваем и устанавливаем NDK 25b
+        wget -q https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+        unzip -q android-ndk-r25b-linux.zip -d $ANDROID_SDK_ROOT
+        mv $ANDROID_SDK_ROOT/android-ndk-r25b $ANDROID_SDK_ROOT/ndk/25b
         rm android-ndk-r25b-linux.zip
         
         # Устанавливаем переменные окружения для NDK
         echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25b" >> $GITHUB_ENV
         echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/25b" >> $GITHUB_ENV
-        
-        # Проверяем установку
-        sdkmanager --list --sdk_root=$ANDROID_SDK_ROOT
+        echo "export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25b" >> $BASH_ENV
         
         # Создаем символическую ссылку для совместимости
         mkdir -p $ANDROID_SDK_ROOT/tools/bin
@@ -66,20 +66,19 @@ jobs:
     - name: Install Python dependencies
       run: |
         source venv/bin/activate
-        # Обновлены версии зависимостей
-        pip install cython==0.29.36 buildozer plyer kivy==2.3.0
+        pip install cython==0.29.36 buildozer==1.5.0 plyer==2.1.0 kivy==2.3.0
         pip install git+https://github.com/kivy/python-for-android.git@master
     
     - name: Configure Buildozer
       run: |
-        # Создаем buildozer.spec с правильными настройками
+        # Создаем buildozer.spec
         cat <<EOF > buildozer.spec
         [app]
         title = VictoryApp
         package.name = victoryapp
         package.domain = org.example
         source.dir = .
-        source.include_exts = py,wav
+        source.include_exts = py,png,jpg,kv,atlas,wav
         version = 1.0
         requirements = python3,kivy==2.3.0,plyer,setuptools,cython
         orientation = portrait
@@ -87,7 +86,8 @@ jobs:
         android.permissions = INTERNET
         android.api = 34
         android.minapi = 21
-        android.ndk = 25b  # Обновленная версия NDK
+        android.ndk = 25b
+        android.ndk_path = $GITHUB_WORKSPACE/android-sdk/ndk/25b
         android.sdk_path = $GITHUB_WORKSPACE/android-sdk
         android.build_tools_version = 34.0.0
         android.archs = armeabi-v7a
@@ -96,34 +96,49 @@ jobs:
         android.sdkmanager = $GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin/sdkmanager
         EOF
         
-        # Конвертируем звук (если файл существует)
+        # Конвертируем звук если нужно
         if [ -f victory.wav ]; then
-          ffmpeg -i victory.wav -acodec pcm_s16le -ar 44100 -ac 1 victory_fixed.wav
+          ffmpeg -y -i victory.wav -acodec pcm_s16le -ar 44100 -ac 1 victory_fixed.wav
           mv victory_fixed.wav victory.wav
+        fi
+    
+    - name: Patch python-for-android
+      run: |
+        # Отключаем автоматическую загрузку NDK в python-for-android
+        if [ -d ".buildozer/android/platform/python-for-android" ]; then
+          find .buildozer/android/platform/python-for-android -name '__init__.py' -exec \
+            sed -i '/self\._install_android_ndk()/d' {} \;
         fi
     
     - name: Build APK
       run: |
         source venv/bin/activate
         
-        # Явно указываем путь к SDK и NDK
+        # Устанавливаем критические переменные
         export ANDROID_SDK_ROOT=$GITHUB_WORKSPACE/android-sdk
         export ANDROID_HOME=$GITHUB_WORKSPACE/android-sdk
         export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25b
+        export NDK_HOME=$ANDROID_SDK_ROOT/ndk/25b
+        
+        # Очистка предыдущих сборок
+        buildozer android clean
+        rm -rf .buildozer/android/platform/build-* .buildozer/android/platform/dists
         
         # Создаем необходимые директории
         mkdir -p .buildozer/android/platform/python-for-android
         mkdir -p bin
         
-        # Исправляем путь к sdkmanager в Buildozer
+        # Исправляем путь к sdkmanager
         sed -i "s|android.sdkmanager = .*|android.sdkmanager = $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager|" buildozer.spec
-        
-        # Очищаем предыдущие сборки
-        buildozer android clean
-        rm -rf .buildozer/android/platform/build-armeabi-v7a
         
         # Собираем APK
         buildozer -v android debug
+        
+        # Проверяем наличие APK
+        if [ ! -f bin/*.apk ]; then
+          echo "::error::APK file not found!"
+          exit 1
+        fi
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
