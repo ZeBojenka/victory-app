@@ -9,57 +9,30 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    
-    - name: Install dependencies
+    - name: Set up Docker
       run: |
         sudo apt-get update
-        sudo apt-get install -y \
-          unzip openjdk-17-jdk git autoconf libtool pkg-config \
-          zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
-          cmake libffi-dev libssl-dev python3-dev
+        sudo apt-get install -y docker.io
+        sudo systemctl start docker
+        sudo docker --version
         
-        # Устанавливаем python-for-android отдельно
-        pip install --upgrade pip
-        pip install wheel setuptools cython buildozer plyer kivy
-        pip install "setuptools<67.0"
-        pip install git+https://github.com/kivy/python-for-android.git@master
-        
-    - name: Configure Buildozer
+    - name: Build APK with Docker
       run: |
-        if [ ! -f "buildozer.spec" ]; then
-          buildozer init
-        fi
+        # Создаем Dockerfile
+        cat > Dockerfile <<EOF
+        FROM thomasschmied/buildozer:latest
+        WORKDIR /app
+        COPY . .
+        RUN buildozer android clean
+        CMD ["buildozer", "-v", "android", "debug"]
+        EOF
         
-        # Явно указываем путь к python-for-android
-        echo "p4a.source_dir = $(python -c 'import os, pythonforandroid; print(os.path.dirname(pythonforandroid.__file__))')" >> buildozer.spec
-        
-        # Основные настройки
-        sed -i 's/^requirements = .*/requirements = python3,kivy==2.1.0,plyer,setuptools,cython/' buildozer.spec
-        sed -i 's/^android.ndk = .*/android.ndk = 23b/' buildozer.spec
-        sed -i 's/^android.arch = .*/android.arch = armeabi-v7a/' buildozer.spec
-        sed -i 's/^android.api = .*/android.api = 34/' buildozer.spec
-        sed -i 's/^android.minapi = .*/android.minapi = 21/' buildozer.spec
-        
-        echo "android.allow_backup = False" >> buildozer.spec
-        echo "p4a.branch = master" >> buildozer.spec
-    
-    - name: Build APK
-      run: |
-        # Устанавливаем переменные окружения
-        export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
-        export PATH=$JAVA_HOME/bin:$PATH
-        
-        # Явно указываем путь к python-for-android
-        export PYTHONPATH=$(python -c 'import os, pythonforandroid; print(os.path.dirname(os.path.dirname(pythonforandroid.__file__)))'):$PYTHONPATH
+        # Собираем образ
+        sudo docker build -t victory-app-builder .
         
         # Запускаем сборку
-        buildozer android clean
-        buildozer -v android debug
-    
+        sudo docker run --rm -v $(pwd)/bin:/app/bin victory-app-builder
+        
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
