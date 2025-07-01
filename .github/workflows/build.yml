@@ -16,10 +16,10 @@ jobs:
         pip install buildozer
     - name: Build APK
       run: |
-        buildozer init
-        buildozer -v android debug
+        # Убираем init, так как spec уже есть
+        buildozer -v android debug  # Сразу запускаем сборку
     - name: Upload APK
-      uses: actions/upload-artifact@v4  # Исправлено на v4
+      uses: actions/upload-artifact@v4
       with:
         name: victory-app
         path: bin/*.apk
