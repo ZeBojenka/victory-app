@@ -22,23 +22,20 @@ jobs:
           zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
           cmake libffi-dev libssl-dev python3-dev
         
+        # Устанавливаем python-for-android отдельно
         pip install --upgrade pip
         pip install wheel setuptools cython buildozer plyer kivy
         pip install "setuptools<67.0"
-    
+        pip install git+https://github.com/kivy/python-for-android.git@master
+        
     - name: Configure Buildozer
       run: |
         if [ ! -f "buildozer.spec" ]; then
           buildozer init
         fi
         
-        # Создаем правильную структуру директорий
-        mkdir -p .buildozer/android/platform
-        
-        # Явно задаем пути
-        echo "[buildozer]" >> buildozer.spec
-        echo "build_dir = ./.buildozer" >> buildozer.spec
-        echo "bin_dir = ./bin" >> buildozer.spec
+        # Явно указываем путь к python-for-android
+        echo "p4a.source_dir = $(python -c 'import os, pythonforandroid; print(os.path.dirname(pythonforandroid.__file__))')" >> buildozer.spec
         
         # Основные настройки
         sed -i 's/^requirements = .*/requirements = python3,kivy==2.1.0,plyer,setuptools,cython/' buildozer.spec
@@ -49,7 +46,6 @@ jobs:
         
         echo "android.allow_backup = False" >> buildozer.spec
         echo "p4a.branch = master" >> buildozer.spec
-        echo "p4a.source_dir = ./.buildozer/android/platform/python-for-android" >> buildozer.spec
     
     - name: Build APK
       run: |
@@ -57,10 +53,10 @@ jobs:
         export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
         export PATH=$JAVA_HOME/bin:$PATH
         
-        # Явно создаем необходимые директории
-        mkdir -p .buildozer/android/platform/python-for-android
+        # Явно указываем путь к python-for-android
+        export PYTHONPATH=$(python -c 'import os, pythonforandroid; print(os.path.dirname(os.path.dirname(pythonforandroid.__file__)))'):$PYTHONPATH
         
-        # Запускаем сборку с очисткой кэша
+        # Запускаем сборку
         buildozer android clean
         buildozer -v android debug
     
