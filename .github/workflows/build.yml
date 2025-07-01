@@ -3,7 +3,7 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 40  # Увеличиваем таймаут
+    timeout-minutes: 40
     
     steps:
     - uses: actions/checkout@v4
@@ -15,49 +15,55 @@ jobs:
     
     - name: Install ALL dependencies
       run: |
-        # Системные зависимости
+        # Обновляем систему
         sudo apt-get update
+        
+        # Устанавливаем системные зависимости
         sudo apt-get install -y \
           unzip openjdk-17-jdk git autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
-          cmake libffi-dev libssl-dev python3-dev cython
+          cmake libffi-dev libssl-dev python3-dev
         
-        # Python зависимости
-        pip install --upgrade pip wheel setuptools
-        pip install buildozer plyer kivy
-        
-        # Фикс для Python 3.12
-        pip install "setuptools<67.0"  # Важно для совместимости
-        
+        # Устанавливаем Python зависимости
+        python -m pip install --upgrade pip
+        pip install wheel setuptools cython buildozer plyer kivy
+        pip install "setuptools<67.0"
+    
     - name: Configure Buildozer
       run: |
-        # Создаем минимальный spec если отсутствует
         if [ ! -f "buildozer.spec" ]; then
           buildozer init
         fi
         
-        # Принудительно задаем оптимальные настройки
-        sed -i 's/^requirements = .*/requirements = python3,kivy==2.1.0,plyer,setuptools,cython/' buildozer.spec
-        sed -i 's/^android.ndk = .*/android.ndk = 23b/' buildozer.spec
-        sed -i 's/^android.arch = .*/android.arch = armeabi-v7a/' buildozer.spec
-        sed -i 's/^android.api = .*/android.api = 34/' buildozer.spec
-        sed -i 's/^android.minapi = .*/android.minapi = 21/' buildozer.spec
-        
+        # Автоматически обновляем spec файл
+        echo "[app]" > buildozer.spec
+        echo "title = VictoryApp" >> buildozer.spec
+        echo "package.name = victoryapp" >> buildozer.spec
+        echo "package.domain = org.example" >> buildozer.spec
+        echo "source.dir = ." >> buildozer.spec
+        echo "source.include_exts = py,wav" >> buildozer.spec
+        echo "version = 1.0" >> buildozer.spec
+        echo "requirements = python3,kivy==2.1.0,plyer,setuptools,cython" >> buildozer.spec
+        echo "orientation = portrait" >> buildozer.spec
+        echo "osx.python_version = 3" >> buildozer.spec
+        echo "osx.kivy_version = 2.1.0" >> buildozer.spec
+        echo "fullscreen = 0" >> buildozer.spec
+        echo "android.permissions = INTERNET" >> buildozer.spec
+        echo "android.api = 34" >> buildozer.spec
+        echo "android.minapi = 21" >> buildozer.spec
+        echo "android.ndk = 23b" >> buildozer.spec
+        echo "android.arch = armeabi-v7a" >> buildozer.spec
+    
     - name: Build APK
       run: |
-        # Устанавливаем переменные окружения
         export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
         export PATH=$JAVA_HOME/bin:$PATH
-        
-        # Чистим предыдущие сборки
         buildozer android clean
-        
-        # Запускаем сборку с подробным выводом
         buildozer -v android debug
-        
+    
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: victory-app
         path: bin/*.apk
-        retention-days: 1  # Автоочистка через 1 день
+        retention-days: 1
