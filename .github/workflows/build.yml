@@ -9,47 +9,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up Docker without conflicts
+    - name: Set up Docker
       run: |
-        # Удаляем конфликтующие пакеты
-        sudo apt-get remove -y containerd docker.io || true
-        
-        # Устанавливаем зависимости
         sudo apt-get update
-        sudo apt-get install -y \
-          apt-transport-https \
-          ca-certificates \
-          curl \
-          software-properties-common
-          
-        # Добавляем официальный репозиторий Docker
-        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-        
-        # Устанавливаем Docker
-        sudo apt-get update
-        sudo apt-get install -y docker-ce docker-ce-cli containerd.io
-        
-        # Проверяем установку
+        sudo apt-get install -y docker.io
+        sudo systemctl start docker
         sudo docker --version
-    
-    - name: Build APK with Docker
+        
+    - name: Build APK with Kivy Docker
       run: |
-        # Создаем временный Dockerfile
-        cat <<EOF > Dockerfile
-        FROM thomasschmied/buildozer:latest
-        WORKDIR /app
-        COPY . .
-        RUN buildozer android clean
-        RUN buildozer -v android debug
-        EOF
-        
-        # Собираем образ
-        sudo docker build -t victory-builder .
-        
-        # Копируем APK из контейнера
-        sudo docker run --rm -v $(pwd)/bin:/app/bin victory-builder
-        
+        # Используем официальный образ Kivy
+        sudo docker run --rm -it \
+          -v $(pwd):/app \
+          -v buildozer_cache:/root/.buildozer \
+          kivy/buildozer \
+          sh -c "cd /app && buildozer android clean && buildozer -v android debug"
+    
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
