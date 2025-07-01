@@ -2,7 +2,7 @@ name: Build APK
 on: [push]
 jobs:
   build:
-    runs-on: ubuntu-22.04  # Фиксируем версию Ubuntu
+    runs-on: ubuntu-22.04
     timeout-minutes: 40
     
     steps:
@@ -17,7 +17,6 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        # Установка пакетов, которые работают на Ubuntu 22.04 и 20.04
         sudo apt-get install -y \
           unzip openjdk-17-jdk git autoconf libtool pkg-config \
           zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 \
@@ -33,6 +32,15 @@ jobs:
           buildozer init
         fi
         
+        # Создаем правильную структуру директорий
+        mkdir -p .buildozer/android/platform
+        
+        # Явно задаем пути
+        echo "[buildozer]" >> buildozer.spec
+        echo "build_dir = ./.buildozer" >> buildozer.spec
+        echo "bin_dir = ./bin" >> buildozer.spec
+        
+        # Основные настройки
         sed -i 's/^requirements = .*/requirements = python3,kivy==2.1.0,plyer,setuptools,cython/' buildozer.spec
         sed -i 's/^android.ndk = .*/android.ndk = 23b/' buildozer.spec
         sed -i 's/^android.arch = .*/android.arch = armeabi-v7a/' buildozer.spec
@@ -41,11 +49,18 @@ jobs:
         
         echo "android.allow_backup = False" >> buildozer.spec
         echo "p4a.branch = master" >> buildozer.spec
+        echo "p4a.source_dir = ./.buildozer/android/platform/python-for-android" >> buildozer.spec
     
     - name: Build APK
       run: |
+        # Устанавливаем переменные окружения
         export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
         export PATH=$JAVA_HOME/bin:$PATH
+        
+        # Явно создаем необходимые директории
+        mkdir -p .buildozer/android/platform/python-for-android
+        
+        # Запускаем сборку с очисткой кэша
         buildozer android clean
         buildozer -v android debug
     
