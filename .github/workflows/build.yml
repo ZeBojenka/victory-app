@@ -20,7 +20,7 @@ jobs:
         
         # Создаем правильную структуру Android SDK
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O cmdline-tools.zip
-        mkdir -p android-sdk/cmdline-tools
+        mkdir -p android-sdk
         unzip cmdline-tools.zip -d android-sdk/cmdline-tools
         mv android-sdk/cmdline-tools/cmdline-tools android-sdk/cmdline-tools/latest
         rm cmdline-tools.zip
@@ -76,9 +76,12 @@ jobs:
         android.ndk = 23b
         android.sdk_path = $GITHUB_WORKSPACE/android-sdk
         android.build_tools_version = 34.0.0
-        android.arch = armeabi-v7a
+        android.archs = armeabi-v7a  # Исправлено на archs
         android.allow_backup = False
         p4a.branch = master
+        
+        # Явно указываем путь к sdkmanager
+        android.sdkmanager = $GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin/sdkmanager
         EOF
         
         # Конвертируем звук
@@ -96,6 +99,9 @@ jobs:
         # Создаем необходимые директории
         mkdir -p .buildozer/android/platform/python-for-android
         mkdir -p bin
+        
+        # Обновляем Buildozer до последней версии
+        pip install --upgrade buildozer
         
         buildozer android clean
         buildozer -v android debug
