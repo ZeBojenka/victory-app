@@ -55,6 +55,3 @@ jobs:
         name: victory-app
         path: bin/*.apk
         retention-days: 1
-        name: victory-app
-        path: bin/*.apk
-        retention-days: 1
