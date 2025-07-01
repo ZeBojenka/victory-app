@@ -33,7 +33,7 @@ jobs:
         buildozer android debug
 
     - name: Upload APK artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: victory-app-debug.apk
+        name: victory-app-debug
         path: bin/*.apk
