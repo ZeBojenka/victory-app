@@ -3,7 +3,7 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-22.04
-    timeout-minutes: 40
+    timeout-minutes: 50  # Увеличено время выполнения
     
     steps:
     - name: Checkout code
@@ -36,7 +36,17 @@ jobs:
         yes | sdkmanager --licenses --sdk_root=$ANDROID_SDK_ROOT
         
         # Устанавливаем необходимые компоненты
-        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "build-tools;36.0.0" --sdk_root=$ANDROID_SDK_ROOT
+        sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" --sdk_root=$ANDROID_SDK_ROOT
+        
+        # Скачиваем и устанавливаем NDK 25b вручную
+        wget https://dl.google.com/android/repository/android-ndk-r25b-linux.zip
+        unzip android-ndk-r25b-linux.zip -d $ANDROID_SDK_ROOT/ndk
+        mv $ANDROID_SDK_ROOT/ndk/android-ndk-r25b $ANDROID_SDK_ROOT/ndk/25b
+        rm android-ndk-r25b-linux.zip
+        
+        # Устанавливаем переменные окружения для NDK
+        echo "ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25b" >> $GITHUB_ENV
+        echo "NDK_HOME=$ANDROID_SDK_ROOT/ndk/25b" >> $GITHUB_ENV
         
         # Проверяем установку
         sdkmanager --list --sdk_root=$ANDROID_SDK_ROOT
@@ -56,8 +66,8 @@ jobs:
     - name: Install Python dependencies
       run: |
         source venv/bin/activate
-        pip install cython buildozer plyer kivy
-        pip install "setuptools<67.0"
+        # Обновлены версии зависимостей
+        pip install cython==0.29.36 buildozer plyer kivy==2.3.0
         pip install git+https://github.com/kivy/python-for-android.git@master
     
     - name: Configure Buildozer
@@ -71,13 +81,13 @@ jobs:
         source.dir = .
         source.include_exts = py,wav
         version = 1.0
-        requirements = python3,kivy==2.1.0,plyer,setuptools,cython
+        requirements = python3,kivy==2.3.0,plyer,setuptools,cython
         orientation = portrait
         fullscreen = 0
         android.permissions = INTERNET
         android.api = 34
         android.minapi = 21
-        android.ndk = 23b
+        android.ndk = 25b  # Обновленная версия NDK
         android.sdk_path = $GITHUB_WORKSPACE/android-sdk
         android.build_tools_version = 34.0.0
         android.archs = armeabi-v7a
@@ -86,17 +96,20 @@ jobs:
         android.sdkmanager = $GITHUB_WORKSPACE/android-sdk/cmdline-tools/latest/bin/sdkmanager
         EOF
         
-        # Конвертируем звук
-        ffmpeg -i victory.wav -acodec pcm_s16le -ar 44100 -ac 1 victory_fixed.wav
-        mv victory_fixed.wav victory.wav
+        # Конвертируем звук (если файл существует)
+        if [ -f victory.wav ]; then
+          ffmpeg -i victory.wav -acodec pcm_s16le -ar 44100 -ac 1 victory_fixed.wav
+          mv victory_fixed.wav victory.wav
+        fi
     
     - name: Build APK
       run: |
         source venv/bin/activate
         
-        # Явно указываем путь к SDK для Buildozer
+        # Явно указываем путь к SDK и NDK
         export ANDROID_SDK_ROOT=$GITHUB_WORKSPACE/android-sdk
         export ANDROID_HOME=$GITHUB_WORKSPACE/android-sdk
+        export ANDROID_NDK_HOME=$ANDROID_SDK_ROOT/ndk/25b
         
         # Создаем необходимые директории
         mkdir -p .buildozer/android/platform/python-for-android
@@ -105,7 +118,11 @@ jobs:
         # Исправляем путь к sdkmanager в Buildozer
         sed -i "s|android.sdkmanager = .*|android.sdkmanager = $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager|" buildozer.spec
         
+        # Очищаем предыдущие сборки
         buildozer android clean
+        rm -rf .buildozer/android/platform/build-armeabi-v7a
+        
+        # Собираем APK
         buildozer -v android debug
     
     - name: Upload APK
