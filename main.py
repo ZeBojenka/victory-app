@@ -5,11 +5,13 @@ from kivy.core.audio import SoundLoader
 from plyer import notification
 from kivy.utils import platform
 from kivy.clock import Clock
-import os
 
 class VictoryApp(App):
     def build(self):
         self.sound = None
+        # Загружаем звук при запуске
+        self.load_sound()
+        
         self.button = Button(
             text="НАЖМИ МЕНЯ!",
             font_size=50,
@@ -23,26 +25,24 @@ class VictoryApp(App):
         layout.add_widget(self.button)
         return layout
 
-    def on_start(self):
-        # Загрузка звука при старте приложения
-        self.sound = SoundLoader.load('victory.wav')
-        
-        # Запрос разрешений для Android
-        if platform == 'android':
-            from android.permissions import request_permission, Permission
-            permissions = [
-                Permission.INTERNET,
-                Permission.VIBRATE,
-                Permission.RECEIVE_BOOT_COMPLETED
-            ]
-            request_permission(permissions)
+    def load_sound(self):
+        # Загрузка звука при старте
+        try:
+            self.sound = SoundLoader.load('victory.wav')
+            if not self.sound:
+                print("Ошибка загрузки звука")
+        except Exception as e:
+            print(f"Ошибка загрузки звука: {str(e)}")
 
     def play_victory(self, instance):
         # Воспроизведение звука
         if self.sound:
-            self.sound.play()
+            try:
+                self.sound.play()
+            except Exception as e:
+                print(f"Ошибка воспроизведения: {str(e)}")
         else:
-            print("Звуковой файл не загружен")
+            print("Звук не загружен")
         
         # Показ уведомления
         try:
@@ -53,42 +53,8 @@ class VictoryApp(App):
             )
         except Exception as e:
             print(f"Ошибка уведомления: {str(e)}")
-            # Попытка показать уведомление через Android API
-            if platform == 'android':
-                self.show_android_notification()
 
-    def show_android_notification(self):
-        try:
-            from jnius import autoclass
-            PythonActivity = autoclass('org.kivy.android.PythonActivity')
-            Context = autoclass('android.content.Context')
-            NotificationManager = autoclass('android.app.NotificationManager')
-            NotificationBuilder = autoclass('android.app.Notification$Builder')
-            NotificationChannel = autoclass('android.app.NotificationChannel')
-            
-            context = PythonActivity.mActivity.getApplicationContext()
-            manager = context.getSystemService(Context.NOTIFICATION_SERVICE)
-            
-            # Создаем канал для Android 8+
-            channel_id = "victory_channel"
-            channel_name = "Victory Notifications"
-            importance = NotificationManager.IMPORTANCE_HIGH
-            channel = NotificationChannel(channel_id, channel_name, importance)
-            manager.createNotificationChannel(channel)
-            
-            # Создаем уведомление
-            builder = NotificationBuilder(context, channel_id)
-            builder.setContentTitle("УСПЕХ!")
-            builder.setContentText("Мы создали рабочее Android приложение!")
-            builder.setSmallIcon(context.getApplicationInfo().icon)
-            builder.setAutoCancel(True)
-            
-            # Показываем уведомление
-            manager.notify(1, builder.build())
-        except Exception as e:
-            print(f"Ошибка создания уведомления: {str(e)}")
-
-    # Обработка жизненного цикла Android
+    # Обработка паузы для Android
     def on_pause(self):
         return True
 
