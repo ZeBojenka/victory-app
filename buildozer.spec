@@ -13,7 +13,7 @@ package.domain = org.novfensec
 source.dir = .
 
 # (list) Включаемые файлы (оставьте пустым для включения всех файлов)
-source.include_exts = py,png,jpg,kv,atlas
+source.include_exts = py,png,jpg,kv,atlas,wav
 
 # (list) Шаблоны для включения файлов
 source.include_patterns = images/*.png
@@ -35,7 +35,8 @@ version = 0.1
 # version.regex = __version__ = ['"](.*)['"]
 # version.filename = %(source.dir)s/main.py
 
-# (list) Зависимости приложения (добавлен plyer)
+# (list) Зависимости приложения
+# Указываются через запятую, например: requirements = sqlite3,kivy
 requirements = python3, kivy==2.3.1, https://github.com/kivymd/KivyMD/archive/master.zip, exceptiongroup, asynckivy, asyncgui, materialyoucolor, android, plyer
 
 # (str) Кастомные исходники для зависимостей
@@ -51,8 +52,8 @@ icon.filename = %(source.dir)s/images/favicon.png
 # Допустимые значения: landscape, portrait, portrait-reverse, landscape-reverse
 orientation = portrait
 
-# (list) Объявляемые сервисы (добавлен сервис для уведомлений)
-services = PlyerNotification:plyer.platforms.android.notification.AndroidNotification
+# (list) Объявляемые сервисы
+#services = NAME:ENTRYPOINT_TO_PY,NAME2:ENTRYPOINT2_TO_PY
 
 #
 # Настройки для OSX
@@ -84,10 +85,8 @@ fullscreen = 0
 #icon.adaptive_foreground.filename = %(source.dir)s/data/icon_fg.png
 #icon.adaptive_background.filename = %(source.dir)s/data/icon_bg.png
 
-# (list) Требуемые разрешения (добавлены для работы уведомлений)
-android.permissions = android.permission.VIBRATE, 
-                      android.permission.RECEIVE_BOOT_COMPLETED,
-                      android.permission.FOREGROUND_SERVICE
+# (list) Требуемые разрешения
+#android.permissions = android.permission.INTERNET, (name=android.permission.WRITE_EXTERNAL_STORAGE;maxSdkVersion=18)
 
 # (list) Особенности устройства
 #android.features = android.hardware.usb.host
@@ -132,15 +131,7 @@ android.accept_sdk_license = True
 #android.activity_class_name = org.kivy.android.PythonActivity
 
 # (str) Дополнительный XML для AndroidManifest.xml
-# Для Android 8.0+ требуется канал уведомлений
-# Создайте файл src/android/notification_channel.xml со следующим содержимым:
-# <?xml version="1.0" encoding="utf-8"?>
-# <channel xmlns:android="http://schemas.android.com/apk/res/android"
-#     android:id="default_channel"
-#     android:name="Default"
-#     android:description="Default notifications"
-#     android:importance="high"/>
-android.extra_manifest_xml = ./src/android/notification_channel.xml
+#android.extra_manifest_xml = ./src/android/extra_manifest.xml
 
 # (str) Дополнительные аргументы для тега <application>
 #android.extra_manifest_application_arguments = ./src/android/extra_manifest_application_arguments.xml
