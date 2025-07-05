@@ -1,46 +1,45 @@
 [app]
 
-# (str) Title of your application
+# Название приложения
 title = VictoryApp
 
-# (str) Package name
+# Имя пакета
 package.name = victoryapp
 
-# (str) Package domain (needed for android/ios packaging)
+# Домен пакета
 package.domain = org.example
 
-# (str) Source code where the main.py live
-source.dir = .
-
-# (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas,wav
-
-# (str) Application versioning (method 1)
+# Версия приложения
 version = 0.1
 
-# (list) Application requirements
+# Директория с исходным кодом
+source.dir = .
+
+# Включаемые расширения файлов
+source.include_exts = py,png,jpg,kv,atlas,wav
+
+# Требования
 requirements = 
     python3,
-    kivy==2.3.0,
+    kivy==2.2.0,  # Используем более стабильную версию
     plyer
 
-# (str) Presplash of the application
-# presplash.filename = %(source.dir)s/images/presplash.png
-
-# (str) Icon of the application
-# icon.filename = %(source.dir)s/images/favicon.png
-
-# (list) Supported orientations
+# Ориентация
 orientation = portrait
 
-# Android specific
+# Настройки Android
 android.api = 33
 android.minapi = 21
-android.ndk = 25b
-android.archs = arm64-v8a, armeabi-v7a
+android.ndk = 23b  # Более стабильная версия NDK
+android.archs = arm64-v8a  # Только 64-битная архитектура
+android.allow_backup = True
 
-# (list) Permissions
+# Разрешения
 android.permissions = INTERNET, VIBRATE
+
+# Настройки сборки
+p4a.branch = 2023.08.24  # Конкретная версия python-for-android
+android.accept_sdk_license = True
 
 [buildozer]
 log_level = 2
