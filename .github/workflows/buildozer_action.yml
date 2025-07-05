@@ -12,27 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get Date
-        id: get-date
-        run: echo "date=$(date -u '+%Y%m%d')" >> $GITHUB_ENV
-
       - name: Cache Buildozer
         uses: actions/cache@v4
         with:
           path: |
             ~/.buildozer
             .buildozer
-          key: ${{ runner.os }}-buildozer-${{ env.date }}
+          key: ${{ runner.os }}-buildozer-${{ github.run_id }}
           restore-keys: |
             ${{ runner.os }}-buildozer-
-
-      - name: Cache Android SDK
-        uses: actions/cache@v4
-        with:
-          path: ~/.buildozer/android/platform/android-sdk
-          key: ${{ runner.os }}-android-sdk-${{ env.date }}
-          restore-keys: |
-            ${{ runner.os }}-android-sdk-
 
       - name: Install dependencies
         run: |
@@ -47,13 +35,13 @@ jobs:
             zip unzip autoconf libtool pkg-config libncurses5-dev libncursesw5-dev \
             libtinfo6 cmake libffi-dev libssl-dev automake
 
-      - name: Setup Java 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '11'
 
-      - name: Set up Python 3.11
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -62,14 +50,6 @@ jobs:
         run: |
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
-
-      - name: Prepare Android resources
-        run: |
-          mkdir -p res/xml
-          echo '<?xml version="1.0" encoding="utf-8"?>' > res/xml/provider_paths.xml
-          echo '<paths xmlns:android="http://schemas.android.com/apk/res/android">' >> res/xml/provider_paths.xml
-          echo '    <external-path name="external_files" path="."/>' >> res/xml/provider_paths.xml
-          echo '</paths>' >> res/xml/provider_paths.xml
 
       - name: Build with Buildozer
         run: |
@@ -80,4 +60,4 @@ jobs:
         with:
           name: victory-app
           path: bin/*.apk
-          retention-days: 7
+          retention-days: 3
