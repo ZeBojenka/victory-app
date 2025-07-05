@@ -1,72 +1,46 @@
 [app]
 
-# Название приложения
+# (str) Title of your application
 title = VictoryApp
 
-# Имя пакета
+# (str) Package name
 package.name = victoryapp
 
-# Домен пакета
+# (str) Package domain (needed for android/ios packaging)
 package.domain = org.example
 
-# Версия приложения (добавлена эта строка)
-version = 0.1
-
-# Директория с исходным кодом
+# (str) Source code where the main.py live
 source.dir = .
 
-# Включаемые расширения файлов
-source.include_exts = py,png,jpg,kv,atlas,wav,ttf
+# (list) Source files to include (let empty to include all the files)
+source.include_exts = py,png,jpg,kv,atlas,wav
 
-# Требования
+# (str) Application versioning (method 1)
+version = 0.1
+
+# (list) Application requirements
 requirements = 
     python3,
     kivy==2.3.0,
-    plyer,
-    android,
-    jnius
+    plyer
 
-# Преслаш
-presplash.filename = %(source.dir)s/images/presplash.png
+# (str) Presplash of the application
+# presplash.filename = %(source.dir)s/images/presplash.png
 
-# Иконка
-icon.filename = %(source.dir)s/images/favicon.png
+# (str) Icon of the application
+# icon.filename = %(source.dir)s/images/favicon.png
 
-# Ориентация
+# (list) Supported orientations
 orientation = portrait
 
-# Настройки Android
+# Android specific
 android.api = 33
 android.minapi = 21
 android.ndk = 25b
-android.ndk_api = 21
 android.archs = arm64-v8a, armeabi-v7a
-android.private_storage = True
-android.enable_androidx = True
 
-# Разрешения
-android.permissions = 
-    INTERNET,
-    VIBRATE,
-    RECEIVE_BOOT_COMPLETED,
-    FOREGROUND_SERVICE
-
-# Дополнительные манифесты
-android.extra_manifest_xml = 
-    <application android:usesCleartextTraffic="true">
-        <meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />
-        <receiver android:name="org.kivy.android.PythonService" android:process=":python_service" />
-        <service android:name="org.kivy.android.PythonService" android:process=":python_service" />
-    </application>
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
-    <uses-permission android:name="android.permission.VIBRATE"/>
-
-# Настройки сборки
-android.release_artifact = aab
-android.debug_artifact = apk
-p4a.branch = master
-android.accept_sdk_license = True
+# (list) Permissions
+android.permissions = INTERNET, VIBRATE
 
 [buildozer]
 log_level = 2
