@@ -1,45 +1,28 @@
 [app]
 
-# Название приложения
 title = VictoryApp
-
-# Имя пакета
 package.name = victoryapp
-
-# Домен пакета
 package.domain = org.example
-
-# Версия приложения
 version = 0.1
-
-# Директория с исходным кодом
 source.dir = .
-
-# Включаемые расширения файлов
 source.include_exts = py,png,jpg,kv,atlas,wav
-
-# Требования
-requirements = 
-    python3,
-    kivy==2.2.0,  # Используем более стабильную версию
-    plyer
-
-# Ориентация
+requirements = python3, kivy==2.2.0, plyer
 orientation = portrait
 
-# Настройки Android
+# Android settings
 android.api = 33
 android.minapi = 21
-android.ndk = 23b  # Более стабильная версия NDK
-android.archs = arm64-v8a  # Только 64-битная архитектура
-android.allow_backup = True
-
-# Разрешения
+android.ndk = 23b
+android.archs = arm64-v8a
 android.permissions = INTERNET, VIBRATE
 
-# Настройки сборки
-p4a.branch = 2023.08.24  # Конкретная версия python-for-android
+# macOS settings
+osx.python_version = 3
+osx.kivy_version = 2.2.0
+
+# Build settings
 android.accept_sdk_license = True
+p4a.branch = master
 
 [buildozer]
 log_level = 2
