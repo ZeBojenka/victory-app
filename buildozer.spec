@@ -24,6 +24,15 @@ osx.kivy_version = 2.2.0
 android.accept_sdk_license = True
 p4a.branch = master
 
+# Ускорение сборки
+android.skip_update = True
+p4a.ignore_setup_py = True
+
+# Оптимизация Gradle
+android.gradle_dependencies = 
+    'com.android.tools.build:gradle:7.2.2'
+    'org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.20'
+
 [buildozer]
 log_level = 2
 warn_on_root = 1
