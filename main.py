@@ -23,7 +23,7 @@ class VictoryApp(App):
 
     def play_victory(self, instance):
         # Воспроизводим звук
-        sound = SoundLoader.load('victory.wav')
+        sound = SoundLoader.load('victory.ogg')
         if sound:
             sound.play()
         
