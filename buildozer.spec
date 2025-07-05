@@ -9,6 +9,9 @@ package.name = victoryapp
 # Домен пакета
 package.domain = org.example
 
+# Версия приложения (добавлена эта строка)
+version = 0.1
+
 # Директория с исходным кодом
 source.dir = .
 
