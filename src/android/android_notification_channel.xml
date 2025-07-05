@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<channel xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="default_channel"
+    android:name="Default"
+    android:description="Default notifications"
+    android:importance="high"/>
